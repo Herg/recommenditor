@@ -7,44 +7,65 @@ import requests
 import json
 from datetime import datetime
 import time
-
+from pprint import pprint
 from lib.validation import validate_request
+from lib.request import (make_post_request, make_get_request)
 
-BASEURL = "http://www.reddit.com/api"
+
+BASEURL = "http://www.reddit.com"
 
 
 class redditor(object):
 
-	def __init__(self, username, password):
-		self.username = username
-		self.password = password
-		self.useragent = "/u/%s Magical Reddit Robot" % username
-		self.last_request = datetime.now()
-		self.client = self.login()
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+        self.last_request = datetime.now()
+        self.client = requests.session()
+        self.client.headers = {"user-agent": "/u/%s Magical Reddit Robot" % username}
+        self.login(user=username, passwd=password, api_type="json")
 
 
-	@validate_request
-	def login(self):
-		client = requests.session()
-		client.headers = {'user-agent': self.useragent}
-		up_dict = {
-			'user': self.username,
-			'passwd': self.password,
-			'api_type': 'json'
-			}
-		self.last_request = datetime.now()
-		res = client.post("%s%s" % (BASEURL, "/login"), data=up_dict)
-		try:
-			j = json.loads(res.text)
-		except:
-			print str(sys.exc_info())
-			return None
-		client.modhash = j['json']['data']['modhash']
-		client.user = self.username
-		print client.modhash
+    def login(self, **kwargs):
+        kwargs["url"] = "%s%s" % (BASEURL, "/api/login")
+        res = make_post_request(self, **kwargs)
+        if res["status"] != 1:
+            return None
+        self.client.modhash = res["data"]["modhash"]
+        self.client.user = self.username
 
-		return client
 
+    def get_subreddits(self, **kwargs):
+        repeat = 1
+        limit = 100
+        if "limit" in kwargs:
+            limit = kwargs["limit"]
+        if "meta_limit" in kwargs:
+            repeat = int(kwargs.pop("meta_limit")) / limit
+        list_type = "popular"
+        if "list_type" in kwargs:
+            list_type = kwargs.pop("list_type")
+        kwargs["url"] = "%s%s/%s/.json" % (BASEURL, "/subreddits", list_type)
+        after = None
+        if "after" in kwargs:
+            after = kwargs["after"]
+
+        subreddits = {}
+        for rot in range(repeat):
+            if after is not None:
+                kwargs["after"] = after
+            res = make_get_request(self, **kwargs)
+            if res["status"] != 1:
+                return res
+            if "after" in res["data"]:
+                after = res["data"]["after"]
+            else:
+                after = None
+            for row in res["data"]["children"]:
+                print row["data"]["title"]
+            if after is None:
+                return subreddits
+        return {"status": 1, "after": after, "data": subreddits}
 
 
 
