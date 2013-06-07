@@ -10,11 +10,6 @@ def validate_request(func):
                 "status": 0,
                 "errmsg": "No URL given"
             }
-        if "limit" in kwargs and kwargs["limit"] > 100:
-            return {
-                "status": 0,
-                "errmsg": "Maximum allowed limit is 100"
-            }
         now = datetime.now()
         diff = now - redditor_obj.last_request
         # rate limiting, cannot make more than two requests

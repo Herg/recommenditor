@@ -36,36 +36,14 @@ class redditor(object):
 
 
     def get_subreddits(self, **kwargs):
-        repeat = 1
-        limit = 100
-        if "limit" in kwargs:
-            limit = kwargs["limit"]
-        if "meta_limit" in kwargs:
-            repeat = int(kwargs.pop("meta_limit")) / limit
         list_type = "popular"
         if "list_type" in kwargs:
             list_type = kwargs.pop("list_type")
         kwargs["url"] = "%s%s/%s/.json" % (BASEURL, "/subreddits", list_type)
-        after = None
-        if "after" in kwargs:
-            after = kwargs["after"]
-
-        subreddits = {}
-        for rot in range(repeat):
-            if after is not None:
-                kwargs["after"] = after
-            res = make_get_request(self, **kwargs)
-            if res["status"] != 1:
-                return res
-            if "after" in res["data"]:
-                after = res["data"]["after"]
-            else:
-                after = None
-            for row in res["data"]["children"]:
-                print row["data"]["title"]
-            if after is None:
-                return subreddits
-        return {"status": 1, "after": after, "data": subreddits}
+        # pull down the subreddit data
+        data = make_get_request(self, **kwargs)
+        for resp_obj in data["data"]:
+            pprint(resp_obj)
 
 
 
