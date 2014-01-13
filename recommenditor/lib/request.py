@@ -31,6 +31,7 @@ def make_get_request(redditor, **kwargs):
     # pass back list of data objects revieved from reddit
     data = []
     for rot in range(repeat):
+        #print str(rot) + " out of " + str(repeat)
         if after is not None:
             kwargs["after"] = after
         kwargs["url"] = url
@@ -53,29 +54,33 @@ def make_get_request(redditor, **kwargs):
 
 @validate_request
 def get_request_helper(redditor, **kwargs):
-    redditor.last_request = datetime.now()
     res = redditor.client.get(kwargs.pop("url"), params=kwargs)
     try:
         j = json.loads(res.text)
+        if "data" not in j:
+            raise
     except:
+        redditor.last_request = datetime.now()
         return {
             "status": 0,
             "errmsg": "Server error, please try again"
         }
-
+    redditor.last_request = datetime.now()
     return {"status": 1, "data": j["data"]}
 
 
 @validate_request
 def make_post_request(redditor, **kwargs):
-    redditor.last_request = datetime.now()
     res = redditor.client.post(kwargs.pop("url"), data=kwargs)
     try:
         j = json.loads(res.text)
+        if "data" not in j:
+            raise
     except:
+        redditor.last_request = datetime.now()
         return {
             "status": 0,
             "errmsg": "Server error, please try again"
         }
-
+    redditor.last_request = datetime.now()
     return {"status": 1, "data": j["json"]["data"]}
